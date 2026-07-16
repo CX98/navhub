@@ -12,7 +12,8 @@ import {
 import { useNavData } from "@/hooks/useNavData";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { SiteCard } from "@/components/SiteCard";
-import { CategoryFilter } from "@/components/CategoryFilter";
+import { FolderSidebar } from "@/components/FolderSidebar";
+import { TagFilter } from "@/components/TagFilter";
 import { SiteDetailDialog } from "@/components/SiteDetailDialog";
 import { SiteFormDialog } from "@/components/SiteFormDialog";
 import { ManageDialog } from "@/components/ManageDialog";
@@ -28,8 +29,6 @@ function AppInner() {
     allSites,
     loading,
     error,
-    filterMode,
-    setFilterMode,
     activeFolderId,
     setActiveFolderId,
     activeTagId,
@@ -153,9 +152,9 @@ function AppInner() {
 
       {/* Main container */}
       <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-7xl">
           {/* Header */}
-          <header className="mb-8">
+          <header className="mb-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg">
@@ -176,7 +175,6 @@ function AppInner() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Auth status button */}
                 {isAuth ? (
                   <Button
                     variant="ghost"
@@ -206,7 +204,6 @@ function AppInner() {
                 >
                   <RefreshCw className="size-4 text-gray-600" />
                 </Button>
-                {/* Only show Add button when logged in */}
                 {isAuth && (
                   <Button
                     onClick={handleAdd}
@@ -231,66 +228,88 @@ function AppInner() {
             </div>
           </header>
 
-          {/* Category filter */}
-          <div className="mb-6">
-            <CategoryFilter
-              filterMode={filterMode}
-              folders={folders}
-              tags={tags}
-              activeFolderId={activeFolderId}
-              activeTagId={activeTagId}
-              folderSiteCounts={folderSiteCounts}
-              tagSiteCounts={tagSiteCounts}
-              totalCount={allSites.length}
-              onModeChange={setFilterMode}
-              onFolderSelect={setActiveFolderId}
-              onTagSelect={setActiveTagId}
-              onManageClick={() => setManageOpen(true)}
-              isAuth={isAuth}
-            />
-          </div>
+          {/* Main layout: Sidebar (folders) + Content area (tags + sites) */}
+          <div className="flex gap-5">
+            {/* Left sidebar — Folders */}
+            <div className="hidden md:block w-56 shrink-0">
+              <FolderSidebar
+                folders={folders}
+                activeFolderId={activeFolderId}
+                folderSiteCounts={folderSiteCounts}
+                totalCount={allSites.length}
+                onFolderSelect={setActiveFolderId}
+              />
+            </div>
 
-          {/* Content */}
-          {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="size-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-500" />
-            </div>
-          ) : error ? (
-            <div className="glass-card rounded-2xl p-8 text-center">
-              <p className="text-red-500">加载失败：{error}</p>
-              <Button
-                onClick={refresh}
-                className="mt-4 rounded-xl bg-indigo-500 text-white"
-              >
-                重试
-              </Button>
-            </div>
-          ) : sites.length === 0 ? (
-            <div className="glass-card rounded-2xl p-12 text-center">
-              <Compass className="mx-auto size-12 text-gray-300" />
-              <p className="mt-4 text-gray-500">
-                {searchQuery || activeFolderId !== null || activeTagId !== null
-                  ? "没有找到匹配的网站"
-                  : "还没有添加任何网站"}
-              </p>
-              {!isAuth && !searchQuery && activeFolderId === null && activeTagId === null && (
-                <p className="mt-2 text-sm text-gray-400">
-                  按 Ctrl+Shift+K 登录后可管理内容
-                </p>
+            {/* Right content area */}
+            <div className="min-w-0 flex-1">
+              {/* Tag filter (top) */}
+              <div className="mb-5">
+                <TagFilter
+                  tags={tags}
+                  activeTagId={activeTagId}
+                  tagSiteCounts={tagSiteCounts}
+                  totalCount={activeFolderId === null ? allSites.length : allSites.filter(s => s.folder_id === activeFolderId).length}
+                  onTagSelect={setActiveTagId}
+                  onManageClick={() => setManageOpen(true)}
+                  isAuth={isAuth}
+                />
+              </div>
+
+              {/* Mobile folder selector (visible on small screens) */}
+              <div className="md:hidden mb-4">
+                <FolderSidebar
+                  folders={folders}
+                  activeFolderId={activeFolderId}
+                  folderSiteCounts={folderSiteCounts}
+                  totalCount={allSites.length}
+                  onFolderSelect={setActiveFolderId}
+                />
+              </div>
+
+              {/* Content */}
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="size-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-500" />
+                </div>
+              ) : error ? (
+                <div className="glass-card rounded-2xl p-8 text-center">
+                  <p className="text-red-500">加载失败：{error}</p>
+                  <Button
+                    onClick={refresh}
+                    className="mt-4 rounded-xl bg-indigo-500 text-white"
+                  >
+                    重试
+                  </Button>
+                </div>
+              ) : sites.length === 0 ? (
+                <div className="glass-card rounded-2xl p-12 text-center">
+                  <Compass className="mx-auto size-12 text-gray-300" />
+                  <p className="mt-4 text-gray-500">
+                    {searchQuery || activeFolderId !== null || activeTagId !== null
+                      ? "没有找到匹配的网站"
+                      : "还没有添加任何网站"}
+                  </p>
+                  {!isAuth && !searchQuery && activeFolderId === null && activeTagId === null && (
+                    <p className="mt-2 text-sm text-gray-400">
+                      按 Ctrl+Shift+K 登录后可管理内容
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {sites.map((site, index) => (
+                    <SiteCard
+                      key={site.id}
+                      site={site}
+                      index={index}
+                      onClick={() => handleCardClick(site)}
+                    />
+                  ))}
+                </div>
               )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {sites.map((site, index) => (
-                <SiteCard
-                  key={site.id}
-                  site={site}
-                  index={index}
-                  onClick={() => handleCardClick(site)}
-                />
-              ))}
-            </div>
-          )}
+          </div>
 
           {/* Footer */}
           <footer className="mt-12 text-center text-sm text-gray-400">

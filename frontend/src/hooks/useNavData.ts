@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { foldersApi, tagsApi, sitesApi } from "@/lib/api";
 import type { Folder, Tag, Site } from "@/types";
 
-export type FilterMode = "folder" | "tag";
-
 export function useNavData() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -11,8 +9,7 @@ export function useNavData() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter state
-  const [filterMode, setFilterMode] = useState<FilterMode>("folder");
+  // Filter state — both folder and tag can be active simultaneously
   const [activeFolderId, setActiveFolderId] = useState<number | null>(null);
   const [activeTagId, setActiveTagId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -40,12 +37,12 @@ export function useNavData() {
     fetchAll();
   }, [fetchAll]);
 
-  // Filter sites based on mode and search
+  // Filter sites — both folder and tag filters are applied simultaneously (AND logic)
   const filteredSites = sites.filter((site) => {
     // Folder filter
-    if (filterMode === "folder" && activeFolderId !== null && site.folder_id !== activeFolderId) return false;
+    if (activeFolderId !== null && site.folder_id !== activeFolderId) return false;
     // Tag filter
-    if (filterMode === "tag" && activeTagId !== null) {
+    if (activeTagId !== null) {
       const siteTags = site.tags || [];
       if (!siteTags.some(t => t.id === activeTagId)) return false;
     }
@@ -61,18 +58,21 @@ export function useNavData() {
     return true;
   });
 
-  // Compute counts
+  // Compute folder site counts (total, not filtered by tag)
   const folderSiteCounts = sites.reduce((acc, s) => {
     if (s.folder_id) acc[s.folder_id] = (acc[s.folder_id] || 0) + 1;
     return acc;
   }, {} as Record<number, number>);
 
-  const tagSiteCounts = sites.reduce((acc, s) => {
-    for (const t of s.tags || []) {
-      acc[t.id] = (acc[t.id] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<number, number>);
+  // Compute tag site counts (considering active folder if set)
+  const tagSiteCounts = sites
+    .filter(s => activeFolderId === null || s.folder_id === activeFolderId)
+    .reduce((acc, s) => {
+      for (const t of s.tags || []) {
+        acc[t.id] = (acc[t.id] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<number, number>);
 
   // CRUD operations for sites
   const addSite = async (data: Partial<Site> & { tag_ids?: number[] }) => {
@@ -129,8 +129,6 @@ export function useNavData() {
     allSites: sites,
     loading,
     error,
-    filterMode,
-    setFilterMode,
     activeFolderId,
     setActiveFolderId,
     activeTagId,
