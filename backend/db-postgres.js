@@ -196,6 +196,7 @@ const postgresAdapter = {
 
   // Seed helpers
   async seedClear() {
+    await initPromise;
     await pool.query("DELETE FROM site_tags");
     await pool.query("DELETE FROM sites");
     await pool.query("DELETE FROM tags");
@@ -206,6 +207,7 @@ const postgresAdapter = {
     await pool.query("ALTER SEQUENCE folders_id_seq RESTART WITH 1");
   },
   async seedFolders(folders) {
+    await initPromise;
     const map = {};
     for (const f of folders) {
       const { rows } = await pool.query("INSERT INTO folders (name, color, icon, sort_order) VALUES ($1, $2, $3, $4) RETURNING id", [f.name, f.color, f.icon, f.order]);
@@ -214,6 +216,7 @@ const postgresAdapter = {
     return map;
   },
   async seedTags(tags) {
+    await initPromise;
     const map = {};
     for (const t of tags) {
       const { rows } = await pool.query("INSERT INTO tags (name, color, sort_order) VALUES ($1, $2, $3) RETURNING id", [t.name, t.color, t.order]);
@@ -222,6 +225,7 @@ const postgresAdapter = {
     return map;
   },
   async seedSites(sites, folderMap, tagMap) {
+    await initPromise;
     for (let i = 0; i < sites.length; i++) {
       const s = sites[i];
       const { rows } = await pool.query(`INSERT INTO sites (title, description, url, icon, usage_guide, folder_id, sort_order) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`, [s.title, s.description, s.url, "", s.usage_guide, folderMap[s.folder], i]);
