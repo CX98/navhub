@@ -1,95 +1,73 @@
-// Supabase REST API helpers using fetch
-// Works natively in Cloudflare Workers - zero npm dependencies needed
+// Supabase PostgREST API helpers using fetch
+// Zero npm dependencies - works natively in Cloudflare Workers
 
-interface SupabaseConfig {
-  url: string;
-  serviceKey: string;
-}
-
-function sb(config: SupabaseConfig) {
-  const baseHeaders: Record<string, string> = {
-    apikey: config.serviceKey,
-    Authorization: `Bearer ${config.serviceKey}`,
+function sb(url: string, serviceKey: string) {
+  const h: Record<string, string> = {
+    apikey: serviceKey,
+    Authorization: "Bearer " + serviceKey,
     "Content-Type": "application/json",
     Prefer: "return=representation",
   };
 
   return {
-    // GET with select, filter, order
-    async query(table: string, opts: { select?: string; filter?: Record<string, string>; order?: string; limit?: number } = {}) {
-      const params = new URLSearchParams();
-      if (opts.select) params.set("select", opts.select);
-      if (opts.filter) {
-        for (const [k, v] of Object.entries(opts.filter)) params.set(k, v);
-      }
-      if (opts.order) params.set("order", opts.order);
-      if (opts.limit) params.set("limit", String(opts.limit));
-
-      const qs = params.toString();
-      const url = `${config.url}/rest/v1/${table}${qs ? "?" + qs : ""}`;
-      const res = await fetch(url, { headers: baseHeaders });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Supabase GET ${table}: ${res.status} ${text}`);
-      }
+    // GET rows with optional select, filter, order
+    async query(table: string, opts?: { select?: string; filter?: Record<string, string>; order?: string; limit?: number }) {
+      const p = new URLSearchParams();
+      if (opts?.select) p.set("select", opts.select);
+      if (opts?.filter) for (const [k, v] of Object.entries(opts.filter)) p.set(k, v);
+      if (opts?.order) p.set("order", opts.order);
+      if (opts?.limit) p.set("limit", String(opts.limit));
+      const qs = p.toString();
+      const res = await fetch(url + "/rest/v1/" + table + (qs ? "?" + qs : ""), { headers: h });
+      if (!res.ok) throw new Error("GET " + table + ": " + res.status + " " + await res.text());
       return res.json();
     },
 
     // GET single row by id
     async getById(table: string, id: number, select?: string) {
-      const params = new URLSearchParams();
-      if (select) params.set("select", select);
-      params.set("id", `eq.${id}`);
-      const url = `${config.url}/rest/v1/${table}?${params.toString()}`;
-      const res = await fetch(url, { headers: baseHeaders });
-      if (!res.ok) throw new Error(`Supabase getById ${table}: ${res.status}`);
+      const p = new URLSearchParams();
+      if (select) p.set("select", select);
+      p.set("id", "eq." + id);
+      const res = await fetch(url + "/rest/v1/" + table + "?" + p.toString(), { headers: h });
+      if (!res.ok) throw new Error("getById " + table + ": " + res.status);
       const rows = await res.json();
       return rows[0] || null;
     },
 
-    // INSERT one or multiple rows
-    async insert(table: string, data: Record<string, unknown> | Record<string, unknown>[]) {
-      const url = `${config.url}/rest/v1/${table}`;
-      const res = await fetch(url, {
+    // INSERT rows
+    async insert(table: string, data: any) {
+      const res = await fetch(url + "/rest/v1/" + table, {
         method: "POST",
-        headers: baseHeaders,
+        headers: h,
         body: JSON.stringify(data),
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Supabase INSERT ${table}: ${res.status} ${text}`);
-      }
+      if (!res.ok) throw new Error("INSERT " + table + ": " + res.status + " " + await res.text());
       return res.json();
     },
 
     // UPDATE rows matching filter
-    async update(table: string, filter: Record<string, string>, data: Record<string, unknown>) {
-      const params = new URLSearchParams();
-      for (const [k, v] of Object.entries(filter)) params.set(k, v);
-      const url = `${config.url}/rest/v1/${table}?${params.toString()}`;
-      const res = await fetch(url, {
+    async update(table: string, filter: Record<string, string>, data: any) {
+      const p = new URLSearchParams();
+      for (const [k, v] of Object.entries(filter)) p.set(k, v);
+      const res = await fetch(url + "/rest/v1/" + table + "?" + p.toString(), {
         method: "PATCH",
-        headers: baseHeaders,
+        headers: h,
         body: JSON.stringify(data),
       });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Supabase UPDATE ${table}: ${res.status} ${text}`);
-      }
+      if (!res.ok) throw new Error("UPDATE " + table + ": " + res.status + " " + await res.text());
       const rows = await res.json();
       return rows[0] || null;
     },
 
     // DELETE rows matching filter
-    async delete(table: string, filter: Record<string, string>) {
-      const params = new URLSearchParams();
-      for (const [k, v] of Object.entries(filter)) params.set(k, v);
-      const url = `${config.url}/rest/v1/${table}?${params.toString()}`;
-      const res = await fetch(url, {
+    async del(table: string, filter: Record<string, string>) {
+      const p = new URLSearchParams();
+      for (const [k, v] of Object.entries(filter)) p.set(k, v);
+      const res = await fetch(url + "/rest/v1/" + table + "?" + p.toString(), {
         method: "DELETE",
-        headers: { ...baseHeaders, Prefer: "return=representation" },
+        headers: { ...h, Prefer: "return=representation" },
       });
-      if (!res.ok) throw new Error(`Supabase DELETE ${table}: ${res.status}`);
+      if (!res.ok) throw new Error("DELETE " + table + ": " + res.status);
       const rows = await res.json();
       return rows.length > 0;
     },
@@ -97,4 +75,3 @@ function sb(config: SupabaseConfig) {
 }
 
 export { sb };
-export type { SupabaseConfig };
