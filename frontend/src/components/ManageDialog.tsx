@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FolderIcon, TagIcon, Plus, Pencil, Trash2, Loader2, X, Check } from "lucide-react";
+import { FolderIcon, TagIcon, Plus, Pencil, Trash2, Loader2, X, Check, ArrowUpDown } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,15 +40,15 @@ export function ManageDialog({
   onDeleteTag,
 }: ManageDialogProps) {
   // Folder form state
-  const [folderForm, setFolderForm] = useState({ name: "", color: "#6366f1" });
+  const [folderForm, setFolderForm] = useState({ name: "", color: "#6366f1", sort_order: folders.length + 1 });
   const [editingFolderId, setEditingFolderId] = useState<number | null>(null);
-  const [editFolderForm, setEditFolderForm] = useState({ name: "", color: "" });
+  const [editFolderForm, setEditFolderForm] = useState({ name: "", color: "", sort_order: 0 });
   const [folderLoading, setFolderLoading] = useState(false);
 
   // Tag form state
-  const [tagForm, setTagForm] = useState({ name: "", color: "#6366f1" });
+  const [tagForm, setTagForm] = useState({ name: "", color: "#6366f1", sort_order: tags.length + 1 });
   const [editingTagId, setEditingTagId] = useState<number | null>(null);
-  const [editTagForm, setEditTagForm] = useState({ name: "", color: "" });
+  const [editTagForm, setEditTagForm] = useState({ name: "", color: "", sort_order: 0 });
   const [tagLoading, setTagLoading] = useState(false);
 
   // Delete confirmation
@@ -59,8 +59,8 @@ export function ManageDialog({
     if (!folderForm.name.trim()) return;
     setFolderLoading(true);
     try {
-      await onAddFolder({ name: folderForm.name.trim(), color: folderForm.color });
-      setFolderForm({ name: "", color: "#6366f1" });
+      await onAddFolder({ name: folderForm.name.trim(), color: folderForm.color, sort_order: folderForm.sort_order });
+      setFolderForm({ name: "", color: "#6366f1", sort_order: folders.length + 2 });
     } catch (err) {
       console.error(err);
     } finally {
@@ -72,7 +72,7 @@ export function ManageDialog({
     if (!editingFolderId || !editFolderForm.name.trim()) return;
     setFolderLoading(true);
     try {
-      await onUpdateFolder(editingFolderId, { name: editFolderForm.name.trim(), color: editFolderForm.color });
+      await onUpdateFolder(editingFolderId, { name: editFolderForm.name.trim(), color: editFolderForm.color, sort_order: editFolderForm.sort_order });
       setEditingFolderId(null);
     } catch (err) {
       console.error(err);
@@ -85,8 +85,8 @@ export function ManageDialog({
     if (!tagForm.name.trim()) return;
     setTagLoading(true);
     try {
-      await onAddTag({ name: tagForm.name.trim(), color: tagForm.color });
-      setTagForm({ name: "", color: "#6366f1" });
+      await onAddTag({ name: tagForm.name.trim(), color: tagForm.color, sort_order: tagForm.sort_order });
+      setTagForm({ name: "", color: "#6366f1", sort_order: tags.length + 2 });
     } catch (err) {
       console.error(err);
     } finally {
@@ -98,7 +98,7 @@ export function ManageDialog({
     if (!editingTagId || !editTagForm.name.trim()) return;
     setTagLoading(true);
     try {
-      await onUpdateTag(editingTagId, { name: editTagForm.name.trim(), color: editTagForm.color });
+      await onUpdateTag(editingTagId, { name: editTagForm.name.trim(), color: editTagForm.color, sort_order: editTagForm.sort_order });
       setEditingTagId(null);
     } catch (err) {
       console.error(err);
@@ -155,7 +155,17 @@ export function ManageDialog({
               placeholder="新文件夹名称..."
               className="glass-input rounded-lg border-white/40 text-gray-800 placeholder:text-gray-400 h-9"
             />
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
+              <ArrowUpDown className="size-3.5 text-gray-400" />
+              <Input
+                type="number"
+                value={folderForm.sort_order}
+                onChange={(e) => setFolderForm({ ...folderForm, sort_order: Number(e.target.value) || 0 })}
+                className="glass-input rounded-lg border-white/40 text-gray-800 h-9 w-14 text-center"
+                min={0}
+              />
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {colors.slice(0, 6).map((c) => (
                 <button
                   key={c}
@@ -189,7 +199,17 @@ export function ManageDialog({
                       onChange={(e) => setEditFolderForm({ ...editFolderForm, name: e.target.value })}
                       className="glass-input rounded-lg border-white/40 text-gray-800 h-9"
                     />
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <ArrowUpDown className="size-3.5 text-gray-400" />
+                      <Input
+                        type="number"
+                        value={editFolderForm.sort_order}
+                        onChange={(e) => setEditFolderForm({ ...editFolderForm, sort_order: Number(e.target.value) || 0 })}
+                        className="glass-input rounded-lg border-white/40 text-gray-800 h-9 w-14 text-center"
+                        min={0}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       {colors.slice(0, 6).map((c) => (
                         <button
                           key={c}
@@ -223,6 +243,10 @@ export function ManageDialog({
                   <div className="flex items-center gap-2">
                     <span className="size-3 rounded-full" style={{ backgroundColor: folder.color }} />
                     <span className="font-medium text-gray-800">{folder.name}</span>
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-black/5 px-1.5 py-0.5 text-xs text-gray-500">
+                      <ArrowUpDown className="size-2.5" />
+                      {folder.sort_order}
+                    </span>
                     <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-xs text-gray-500">
                       {count} 个网站
                     </span>
@@ -233,7 +257,7 @@ export function ManageDialog({
                       size="sm"
                       onClick={() => {
                         setEditingFolderId(folder.id);
-                        setEditFolderForm({ name: folder.name, color: folder.color });
+                        setEditFolderForm({ name: folder.name, color: folder.color, sort_order: folder.sort_order });
                       }}
                       className="rounded-lg h-8 px-2 text-gray-500 hover:text-gray-700"
                     >
@@ -272,7 +296,17 @@ export function ManageDialog({
               placeholder="新标签名称..."
               className="glass-input rounded-lg border-white/40 text-gray-800 placeholder:text-gray-400 h-9"
             />
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
+              <ArrowUpDown className="size-3.5 text-gray-400" />
+              <Input
+                type="number"
+                value={tagForm.sort_order}
+                onChange={(e) => setTagForm({ ...tagForm, sort_order: Number(e.target.value) || 0 })}
+                className="glass-input rounded-lg border-white/40 text-gray-800 h-9 w-14 text-center"
+                min={0}
+              />
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {colors.slice(0, 6).map((c) => (
                 <button
                   key={c}
@@ -306,7 +340,17 @@ export function ManageDialog({
                       onChange={(e) => setEditTagForm({ ...editTagForm, name: e.target.value })}
                       className="glass-input rounded-lg border-white/40 text-gray-800 h-9"
                     />
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
+                      <ArrowUpDown className="size-3.5 text-gray-400" />
+                      <Input
+                        type="number"
+                        value={editTagForm.sort_order}
+                        onChange={(e) => setEditTagForm({ ...editTagForm, sort_order: Number(e.target.value) || 0 })}
+                        className="glass-input rounded-lg border-white/40 text-gray-800 h-9 w-14 text-center"
+                        min={0}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       {colors.slice(0, 6).map((c) => (
                         <button
                           key={c}
@@ -340,6 +384,10 @@ export function ManageDialog({
                   <div className="flex items-center gap-2">
                     <span className="size-3 rounded-full" style={{ backgroundColor: tag.color }} />
                     <span className="font-medium text-gray-800">{tag.name}</span>
+                    <span className="inline-flex items-center gap-0.5 rounded-full bg-black/5 px-1.5 py-0.5 text-xs text-gray-500">
+                      <ArrowUpDown className="size-2.5" />
+                      {tag.sort_order}
+                    </span>
                     <span className="rounded-full bg-black/5 px-1.5 py-0.5 text-xs text-gray-500">
                       {count} 个网站
                     </span>
@@ -350,7 +398,7 @@ export function ManageDialog({
                       size="sm"
                       onClick={() => {
                         setEditingTagId(tag.id);
-                        setEditTagForm({ name: tag.name, color: tag.color });
+                        setEditTagForm({ name: tag.name, color: tag.color, sort_order: tag.sort_order });
                       }}
                       className="rounded-lg h-8 px-2 text-gray-500 hover:text-gray-700"
                     >
