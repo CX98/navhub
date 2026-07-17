@@ -1,6 +1,8 @@
 import type { Folder, Tag, Site, Stats } from "@/types";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001/api";
+// Production default: /api (same-domain, served by Cloudflare Pages Functions)
+// Local dev: set VITE_API_BASE=http://localhost:3001/api in .env.development
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
 
 // Get stored token
 function getToken(): string | null {
