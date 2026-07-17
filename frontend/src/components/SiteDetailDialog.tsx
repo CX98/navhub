@@ -1,19 +1,23 @@
-import { ExternalLink, Tag, Folder, FileText, BookOpen, Globe } from "lucide-react";
+import { ExternalLink, Tag, Folder, FileText, BookOpen, Globe, Pencil, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import type { Site } from "@/types";
 
 interface SiteDetailDialogProps {
   site: Site | null;
   open: boolean;
   onClose: () => void;
+  isAuth?: boolean;
+  onEdit?: (site: Site) => void;
+  onDelete?: (site: Site) => void;
 }
 
-export function SiteDetailDialog({ site, open, onClose }: SiteDetailDialogProps) {
+export function SiteDetailDialog({ site, open, onClose, isAuth, onEdit, onDelete }: SiteDetailDialogProps) {
   if (!site) return null;
 
   const domain = (() => {
@@ -134,6 +138,30 @@ export function SiteDetailDialog({ site, open, onClose }: SiteDetailDialogProps)
             访问网站
             <ExternalLink className="size-4" />
           </a>
+
+          {/* Edit / Delete buttons — inside dialog content so Radix doesn't treat as outside click */}
+          {isAuth && (
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit?.(site)}
+                className="flex-1 rounded-xl text-gray-600 hover:bg-white/40"
+              >
+                <Pencil className="size-4" />
+                编辑
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete?.(site)}
+                className="flex-1 rounded-xl text-red-500 hover:bg-red-50"
+              >
+                <Trash2 className="size-4" />
+                删除
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

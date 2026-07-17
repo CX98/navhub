@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, Compass, Pencil, Trash2, RefreshCw, LogOut, KeyRound } from "lucide-react";
+import { Search, Plus, Compass, RefreshCw, LogOut, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -326,33 +326,10 @@ function AppInner() {
         site={selectedSite}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
+        isAuth={isAuth}
+        onEdit={handleEdit}
+        onDelete={(site) => setDeleteConfirm(site)}
       />
-
-      {/* Edit / Delete bar - only visible when logged in */}
-      {isAuth && detailOpen && selectedSite && (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-[60] -translate-x-1/2">
-          <div className="glass-strong pointer-events-auto flex items-center gap-2 rounded-2xl p-2 shadow-lg">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleEdit(selectedSite)}
-              className="rounded-xl hover:bg-white/40"
-            >
-              <Pencil className="size-4 text-gray-600" />
-              编辑
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setDeleteConfirm(selectedSite)}
-              className="rounded-xl text-red-500 hover:bg-red-50"
-            >
-              <Trash2 className="size-4" />
-              删除
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Add / Edit form */}
       <SiteFormDialog
