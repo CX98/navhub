@@ -33,7 +33,16 @@ async function handleRequest(request: Request, env: any): Response {
 
   try {
     // ---- Health ----
-    if (path === "health") return json({ status: "ok", db: "supabase" });
+    if (path === "health") {
+      try {
+        // Actually query the DB so the keep-alive automation is effective
+        // and we detect real outages instead of always reporting OK.
+        await supabase.query("folders", { select: "id", limit: 1 });
+        return json({ status: "ok", db: "supabase" });
+      } catch (e) {
+        return json({ status: "error", db: "supabase", detail: e instanceof Error ? e.message : "DB query failed" }, 503);
+      }
+    }
 
     // ---- Auth: Login ----
     if (path === "auth/login" && method === "POST") {
